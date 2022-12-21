@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 
+	"go.uber.org/zap/zapcore"
 	yaml "gopkg.in/yaml.v3"
 )
 
@@ -16,9 +17,40 @@ const (
 type Config struct {
 	URL      string             `yaml:"url"`
 	Packages map[string]Package `yaml:"packages"`
-	Godoc    struct {
-		Host string `yaml:"host"`
-	} `yaml:"godoc"`
+	Godoc    GodocConfig        `yaml:"godoc"`
+}
+
+func (cfg *Config) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("url", cfg.URL)
+	if !cfg.Godoc.empty() {
+		enc.AddObject("godoc", &cfg.Godoc)
+	}
+	return enc.AddObject("packages", packageGroup(cfg.Packages))
+}
+
+// GodocConfig is the configuration for the godoc documentation server.
+type GodocConfig struct {
+	Host string `yaml:"host"`
+}
+
+func (gc *GodocConfig) empty() bool {
+	return gc.Host == ""
+}
+
+func (gc *GodocConfig) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("host", gc.Host)
+	return nil
+}
+
+type packageGroup map[string]Package
+
+func (ps packageGroup) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	for name, p := range ps {
+		if err := enc.AddObject(name, p); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Package details the options available for each repo
@@ -28,6 +60,18 @@ type Package struct {
 	URL    string `yaml:"url"`
 
 	Desc string `yaml:"description"` // plain text only
+}
+
+func (pkg Package) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("repo", pkg.Repo)
+	enc.AddString("branch", pkg.Branch)
+	if len(pkg.URL) > 0 {
+		enc.AddString("url", pkg.URL)
+	}
+	if len(pkg.Desc) > 0 {
+		enc.AddString("description", pkg.Desc)
+	}
+	return nil
 }
 
 // Parse takes a path to a yaml file and produces a parsed Config

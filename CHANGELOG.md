@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Changed
+- Emit structured JSON logs.
+
+[Unreleased]: https://github.com/uber-go/sally/compare/v1.3.0...HEAD
+
 ## [1.3.0]
 ### Added
 - Add an optional `description` field to packages.
